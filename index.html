@@ -1,0 +1,2334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Game | Alphagen Learning</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            purple: '#5E48C4',
+                            purpleDark: '#4A3AAD',
+                            purpleMid: '#7B6ED4',
+                            purplePale: '#EAE7FE',
+                            purpleGhost: '#F5F4FF',
+                            yellow: '#FFD071',
+                            yellowDark: '#E6B84A',
+                            nearBlack: '#1A1A1A'
+                        },
+                        alphagen: {
+                            purple: '#5E48C4',
+                            purpleDark: '#4A3AAD',
+                            purpleMid: '#7B6ED4',
+                            yellow: '#FFD071',
+                            yellowDark: '#E6B84A',
+                            nearBlack: '#1A1A1A'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: #F5F4FF;
+            color: #1A1A1A;
+        }
+
+        main {
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .slide {
+            display: none;
+            width: 100%;
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        .yellow-highlight {
+            position: relative;
+            display: inline-block;
+            isolation: isolate;
+        }
+
+        .yellow-highlight::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: #FFD071;
+            z-index: -1;
+            border-radius: 4px;
+        }
+
+        .panel {
+            background: white;
+            border: 2px solid #EAE7FE;
+            border-radius: 18px;
+            padding: 18px;
+            min-width: 0;
+        }
+
+        .primary {
+            background: #FFD071;
+            color: #1A1A1A;
+            font-weight: 800;
+            border-radius: 12px;
+            padding: 11px 20px;
+            font-size: 13px;
+            transition: background .2s;
+        }
+
+        .primary:hover:not(:disabled) {
+            background: #E6B84A;
+        }
+
+        .primary:disabled {
+            cursor: default;
+            opacity: .75;
+        }
+
+        .concept-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            border: 2px solid #5E48C4;
+            color: #5E48C4;
+            background: white;
+            border-radius: 12px;
+            padding: 9px 14px;
+            font-size: 12px;
+            font-weight: 800;
+            transition: background .2s;
+        }
+
+        .concept-btn:hover {
+            background: #EAE7FE;
+        }
+
+        .choice {
+            border: 2px solid #EAE7FE;
+            background: white;
+            border-radius: 14px;
+            padding: 12px;
+            transition: .2s;
+            cursor: pointer;
+            min-height: 72px;
+            width: 100%;
+        }
+
+        .choice:hover:not(:disabled) {
+            border-color: #5E48C4;
+            transform: translateY(-2px);
+        }
+
+        .choice.correct {
+            border-color: #22C55E;
+            background: #DCFCE7;
+        }
+
+        .choice.wrong {
+            border-color: #EF4444;
+            background: #FEE2E2;
+        }
+
+        .choice:disabled {
+            cursor: default;
+        }
+
+        .feedback {
+            min-height: 24px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #5E48C4;
+            margin-top: 9px;
+        }
+
+        /* SCRATCH BLOCKS */
+
+        .mini-block {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            flex-wrap: wrap;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+            border-radius: 8px;
+            padding: 9px 12px;
+            box-shadow: inset 0 -3px #0002;
+            max-width: 100%;
+        }
+
+        .mini-motion {
+            background: #4C97FF;
+        }
+
+        .mini-event {
+            background: #FFBF00;
+            color: #1A1A1A;
+        }
+
+        .mini-control {
+            background: #FFAB19;
+            color: #1A1A1A;
+        }
+
+        .mini-variable {
+            background: #FF8C1A;
+        }
+
+        .mini-sensing {
+            background: #5CB1D6;
+        }
+
+        .sb-pill {
+            background: white;
+            color: #222;
+            border-radius: 20px;
+            padding: 3px 9px;
+            font-weight: bold;
+        }
+
+        .code-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+
+        .code-stack .mini-block {
+            justify-content: flex-start;
+        }
+
+        .code-indent {
+            margin-left: 16px;
+        }
+
+        /* GAME STAGES */
+
+        .bird-stage {
+            position: relative;
+            height: 235px;
+            border-radius: 18px;
+            overflow: hidden;
+            background: linear-gradient(
+                #DFF7FF 0%,
+                #DFF7FF 82%,
+                #9DDD9C 82%,
+                #9DDD9C 100%
+            );
+            border: 3px solid #EAE7FE;
+        }
+
+        .bird-actor {
+            position: absolute;
+            left: 22%;
+            top: 45%;
+            font-size: 43px;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            line-height: 1;
+        }
+
+        .pipe {
+            position: absolute;
+            width: 54px;
+            background: #4C97FF;
+            border: 3px solid #3373CC;
+            z-index: 2;
+        }
+
+        .pipe-top {
+            top: 0;
+            height: 75px;
+        }
+
+        .pipe-bottom {
+            bottom: 18%;
+            height: 68px;
+        }
+
+        .stage-label {
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            background: white;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #5E48C4;
+            z-index: 10;
+        }
+
+        /* GAME PREVIEW */
+
+        .preview-stage {
+            position: relative;
+            width: min(100%, 400px);
+            height: 260px;
+            overflow: hidden;
+            border-radius: 16px;
+            background: linear-gradient(
+                #DFF7FF 0%,
+                #DFF7FF 82%,
+                #9DDD9C 82%
+            );
+            border: 3px solid #EAE7FE;
+        }
+
+        .preview-bird {
+            position: absolute;
+            left: 30%;
+            top: 44%;
+            font-size: 48px;
+            z-index: 3;
+            animation: previewFloat 1.7s ease-in-out infinite;
+        }
+
+        @keyframes previewFloat {
+            0%, 100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .preview-pipe {
+            position: absolute;
+            right: 18%;
+            width: 55px;
+            background: #4C97FF;
+            border: 3px solid #3373CC;
+        }
+
+        .preview-pipe.top {
+            top: 0;
+            height: 75px;
+        }
+
+        .preview-pipe.bottom {
+            bottom: 18%;
+            height: 75px;
+        }
+
+        /* GAME PLAN */
+
+        .plan-card {
+            border: 2px solid #EAE7FE;
+            background: #F5F4FF;
+            border-radius: 16px;
+            padding: 12px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 140px;
+            transition: .2s;
+            cursor: pointer;
+        }
+
+        .plan-card:hover,
+        .plan-card.selected {
+            border-color: #5E48C4;
+            background: #EAE7FE;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #FFD071;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+        }
+
+        /* CODE PREDICTION */
+
+        .prediction-code {
+            background: #F5F4FF;
+            border: 2px dashed #7B6ED4;
+            border-radius: 14px;
+            padding: 12px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* REVISION QUIZZES */
+
+        .revision-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            width: 100%;
+        }
+
+        .revision-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .revision-panel .choice {
+            min-height: 62px;
+            padding: 10px;
+        }
+
+        .revision-panel .concept-btn {
+            align-self: flex-start;
+            margin-top: auto;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #5E48C4;
+            border-radius: 5px;
+        }
+
+        @media (max-width: 640px) {
+            .panel {
+                padding: 13px;
+            }
+
+            .mini-block {
+                font-size: 11px;
+                padding: 8px 9px;
+            }
+
+            .choice {
+                padding: 9px;
+            }
+
+            .revision-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body class="h-screen w-screen flex flex-col overflow-hidden">
+
+    <!-- HEADER -->
+
+    <header class="w-full bg-alphagen-purple px-4 py-3.5 flex flex-wrap items-center justify-between gap-3 text-white shadow-md rounded-2xl flex-shrink-0">
+
+        <div class="flex items-center gap-3">
+
+            <a href="#"
+               class="bg-alphagen-yellow hover:bg-alphagen-yellowDark text-alphagen-nearBlack px-4 py-2 rounded-xl font-extrabold text-xs md:text-sm shadow-sm transition-all flex items-center gap-2">
+
+                <span class="tracking-wide">
+                    ALPHAGEN LEARNING
+                </span>
+
+            </a>
+
+            <span class="font-extrabold text-base md:text-xl tracking-tight text-white">
+                Scratch - Game Based Learning
+            </span>
+
+        </div>
+
+        <div class="flex items-center gap-3">
+
+            <button onclick="toggleAudio()"
+                    id="audio-btn"
+                    class="bg-alphagen-purpleDark hover:bg-alphagen-purpleMid text-white p-2 rounded-lg transition-all"
+                    title="Toggle Sound">
+
+                <i class="fa-solid fa-volume-high text-base"
+                   id="sound-icon"></i>
+
+            </button>
+
+        </div>
+
+    </header>
+
+    <!-- MAIN -->
+
+    <main id="main-content"
+          class="flex-1 relative flex justify-center p-4 sm:p-6">
+
+        <!-- =====================================================
+             SLIDE 1 — WELCOME
+        ====================================================== -->
+
+        <section id="slide-1"
+                 class="slide active flex-col items-center justify-center text-center max-w-3xl mx-auto gap-5">
+
+            <h1 class="text-3xl sm:text-5xl font-extrabold text-brand-nearBlack leading-tight">
+
+                <span class="text-brand-purple yellow-highlight">
+                    Flappy Bird Game!
+                </span>
+
+            </h1>
+
+            <div class="preview-stage"
+                 style="width:320px;height:180px;max-width:100%">
+
+                <div class="preview-bird">🐤</div>
+
+                <div class="preview-pipe top"></div>
+                <div class="preview-pipe bottom"></div>
+
+            </div>
+
+            <button onclick="nextSlide()"
+                    class="primary text-lg px-8 py-4 shadow-lg">
+
+                Start Adventure!
+
+            </button>
+
+        </section>
+
+        <!-- =====================================================
+             SLIDE 2 — PLAY THE GAME
+        ====================================================== -->
+
+        <section id="slide-2"
+                 class="slide flex-col items-center justify-center max-w-4xl mx-auto w-full">
+
+            <div class="text-center mb-4">
+
+                <h2 class="text-2xl sm:text-3xl font-bold">
+                    Play "Flappy Bird"!
+                </h2>
+
+                <p class="text-sm text-gray-500 mt-2">
+                    Play once. Notice how the bird moves!
+                </p>
+
+            </div>
+
+            <div class="panel flex flex-col items-center w-full max-w-lg">
+
+                <a href="https://scratch.mit.edu/projects/534692354/"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="block w-full flex justify-center"
+                   aria-label="Open Flappy Bird game in Scratch">
+
+                    <div class="preview-stage">
+
+                        <div class="stage-label">
+                            FLAPPY BIRD
+                        </div>
+
+                        <div class="preview-bird">🐤</div>
+
+                        <div class="preview-pipe top"></div>
+                        <div class="preview-pipe bottom"></div>
+
+                        <div class="absolute bottom-3 left-3 text-xs font-bold text-brand-purple">
+                            Click to Play
+                        </div>
+
+                    </div>
+
+                </a>
+
+                <a href="https://scratch.mit.edu/projects/534692354/"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="primary mt-4 inline-flex items-center gap-2">
+
+                    <i class="fa-solid fa-play"></i>
+                    Play Game
+
+                </a>
+
+            </div>
+
+        </section>
+
+        <!-- =====================================================
+             SLIDE 3 — WARM UP
+        ====================================================== -->
+
+        <section id="slide-3"
+                 class="slide flex-col items-center justify-center max-w-5xl mx-auto w-full gap-4">
+
+            <div class="text-center">
+
+                <span class="text-xs font-bold text-brand-purple uppercase">
+                    Quick Warm-Up
+                </span>
+
+                <h2 class="text-2xl sm:text-3xl font-extrabold">
+                    What Happens in Flappy Bird?
+                </h2>
+
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+
+                <div class="panel text-center">
+
+                    <div class="text-4xl mb-2">
+                        🐤 ⬆️
+                    </div>
+
+                    <h3 class="font-bold mb-3 text-sm">
+                        Press SPACE. What happens?
+                    </h3>
+
+                    <div class="grid grid-cols-2 gap-2"
+                         data-quiz="warm1">
+
+                        <button class="choice"
+                                onclick="answer('warm1',this,true)">
+
+                            ⬆️<br>
+                            <b>Flap up</b>
+
+                        </button>
+
+                        <button class="choice"
+                                onclick="answer('warm1',this,false)">
+
+                            ⬇️<br>
+                            <b>Fall down</b>
+
+                        </button>
+
+                    </div>
+
+                    <p id="warm1-feedback"
+                       class="feedback"
+                       aria-live="polite"></p>
+
+                </div>
+
+                <div class="panel text-center">
+
+                    <div class="text-4xl mb-2">
+                        🐤 💥 🟦
+                    </div>
+
+                    <h3 class="font-bold mb-3 text-sm">
+                        Bird hits a pipe. Then?
+                    </h3>
+
+                    <div class="grid grid-cols-2 gap-2"
+                         data-quiz="warm2">
+
+                        <button class="choice"
+                                onclick="answer('warm2',this,false)">
+
+                            ⭐<br>
+                            <b>Score +1</b>
+
+                        </button>
+
+                        <button class="choice"
+                                onclick="answer('warm2',this,true)">
+
+                            🛑<br>
+                            <b>Game over</b>
+
+                        </button>
+
+                    </div>
+
+                    <p id="warm2-feedback"
+                       class="feedback"
+                       aria-live="polite"></p>
+
+                </div>
+
+            </div>
+
+            <p class="text-sm font-bold text-brand-purple"
+               id="warm-score">
+                ⭐ 0 / 2
+            </p>
+
+        </section>
+
+        <!-- =====================================================
+             SLIDE 4 — GAME PLAN
+        ====================================================== -->
+
+        <section id="slide-4"
+                 class="slide flex-col items-center justify-center max-w-5xl mx-auto w-full gap-4">
+
+            <div class="text-center">
+
+                <span class="text-xs font-bold text-brand-purple uppercase">
+                    Our Game Plan
+                </span>
+
+                <h2 class="text-2xl sm:text-3xl font-extrabold">
+                    How Will We Build Flappy Bird?
+                </h2>
+
+                <p class="text-sm text-gray-500 mt-1">
+                    Click each step to explore!
+                </p>
+
+            </div>
+
+            <div class="panel w-full">
+
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+
+                    <button class="plan-card"
+                            onclick="showPlan(1,this)">
+
+                        <span class="step-number">1</span>
+
+                        <span class="font-extrabold text-sm text-brand-purple">
+                            Design the Game
+                        </span>
+
+                        <span class="text-xs">
+                            Sprites + Backdrop
+                        </span>
+
+                    </button>
+
+                    <button class="plan-card"
+                            onclick="showPlan(2,this)">
+
+                        <span class="step-number">2</span>
+
+                        <span class="font-extrabold text-sm text-brand-purple">
+                            Make Bird Fly
+                        </span>
+
+                        <span class="text-xs">
+                            Space + Gravity
+                        </span>
+
+                    </button>
+
+                    <button class="plan-card"
+                            onclick="showPlan(3,this)">
+
+                        <span class="step-number">3</span>
+
+                        <span class="font-extrabold text-sm text-brand-purple">
+                            Clone Obstacles
+                        </span>
+
+                        <span class="text-xs">
+                            More Pipes!
+                        </span>
+
+                    </button>
+
+                    <button class="plan-card"
+                            onclick="showPlan(4,this)">
+
+                        <span class="step-number">4</span>
+
+                        <span class="font-extrabold text-sm text-brand-purple">
+                            Detect Collision
+                        </span>
+
+                        <span class="text-xs">
+                            Touching Pipe?
+                        </span>
+
+                    </button>
+
+                    <button class="plan-card col-span-2 md:col-span-1"
+                            onclick="showPlan(5,this)">
+
+                        <span class="step-number">5</span>
+
+                        <span class="font-extrabold text-sm text-brand-purple">
+                            Score + Game Over
+                        </span>
+
+                        <span class="text-xs">
+                            Points or Stop!
+                        </span>
+
+                    </button>
+
+                </div>
+
+                <div id="plan-feedback"
+                     class="mt-4 text-center text-xs font-bold text-brand-purple min-h-[24px]"
+                     aria-live="polite">
+
+                    Choose a step above.
+
+                </div>
+
+                <div class="flex justify-center mt-3">
+
+                    <button onclick="nextSlide()"
+                            class="primary">
+
+                        Let's Build! ➡
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- =====================================================
+             SLIDE 5 — GRAVITY AND FLAP
+        ====================================================== -->
+
+        <section id="slide-5"
+                 class="slide flex-col items-center justify-center max-w-5xl mx-auto w-full gap-3">
+
+            <div class="text-center">
+
+                <span class="text-xs font-bold text-brand-purple uppercase">
+                    Concept 1 · Movement
+                </span>
+
+                <h2 class="text-2xl sm:text-3xl font-extrabold">
+                    Gravity ⬇️ + Flap ⬆️
+                </h2>
+
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+
+                <div class="panel">
+
+                    <div class="bird-stage" id="flap-stage">
+
+                        <div class="bird-actor"
+                             id="flap-bird"
+                             style="top:45%">
+                            🐤
+                        </div>
+
+                        <div class="absolute bottom-2 left-3 text-xs font-bold text-brand-purple">
+                            Gravity pulls the bird down.
+                        </div>
+
+                    </div>
+
+                    <div class="flex gap-2 justify-center mt-3">
+
+                        <button class="primary"
+                                onclick="flapBird()">
+
+                            ⬆ FLAP!
+
+                        </button>
+
+                        <button class="concept-btn"
+                                onclick="resetFlap()">
+
+                            ↻ Reset
+
+                        </button>
+
+                    </div>
+
+                    <p id="flap-feedback"
+                       class="feedback text-center"
+                       aria-live="polite">
+
+                        Click FLAP to move up!
+
+                    </p>
+
+                </div>
+
+                <div class="panel flex flex-col justify-between">
+
+                    <div>
+
+                        <p class="text-xs font-bold text-brand-purple mb-3">
+                            Choose the block that moves UP
+                        </p>
+
+                        <div class="flex flex-col gap-3"
+                             data-quiz="gravity">
+
+                            <button class="choice flex justify-center items-center"
+                                    onclick="answer('gravity',this,true)">
+
+                                <span class="mini-block mini-motion">
+                                    change y by
+                                    <span class="sb-pill">10</span>
+                                </span>
+
+                            </button>
+
+                            <button class="choice flex justify-center items-center"
+                                    onclick="answer('gravity',this,false)">
+
+                                <span class="mini-block mini-motion">
+                                    change y by
+                                    <span class="sb-pill">-10</span>
+                                </span>
+
+                            </button>
+
+                        </div>
+
+                        <p id="gravity-feedback"
+                           class="feedback"
+                           aria-live="polite"></p>
+
+                    </div>
+
+                    <button class="concept-btn mt-3 self-start">
+                            
+                                            <a href="https://scratchconceptcoordinates.vercel.app/" target="_blank">Revise Coordinates</a>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- =====================================================
+             SLIDE 6 — COLLISION
+        ====================================================== -->
+
+        <section id="slide-6"
+                 class="slide flex-col items-center justify-center max-w-5xl mx-auto w-full gap-3">
+
+            <div class="text-center">
+
+                <span class="text-xs font-bold text-brand-purple uppercase">
+                    Concept 2 · Sensing
+                </span>
+
+                <h2 class="text-2xl sm:text-3xl font-extrabold">
+                    Don't Hit the Pipes!
+                </h2>
+
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+
+                <div class="panel">
+
+                    <div class="bird-stage"
+                         id="collision-stage">
+
+                        <div class="pipe pipe-top"
+                             id="collision-pipe-top"
+                             style="left:66%"></div>
+
+                        <div class="pipe pipe-bottom"
+                             id="collision-pipe-bottom"
+                             style="left:66%"></div>
+
+                        <div class="bird-actor"
+                             id="hit-bird"
+                             style="left:15%;top:50%">
+                            🐤
+                        </div>
+
+                        <div id="hit-message"
+                             class="absolute inset-0 flex items-center justify-center text-xl font-black text-brand-purple pointer-events-none z-10">
+                        </div>
+
+                    </div>
+
+                    <div class="flex flex-wrap justify-center gap-2 mt-3">
+
+                        <button class="primary"
+                                onclick="testCollision()">
+
+                            Test Collision
+
+                        </button>
+
+                        <button class="concept-btn"
+                                onclick="testSafePath()">
+
+                            Safe Path
+
+                        </button>
+
+                        <button class="concept-btn"
+                                onclick="resetCollisionDemo()">
+
+                            ↻ Reset
+
+                        </button>
+
+                    </div>
+
+                    <p id="collision-demo-feedback"
+                       class="feedback text-center"
+                       aria-live="polite">
+
+                        Test both paths!
+
+                    </p>
+
+                </div>
+
+                <div class="panel flex flex-col justify-between">
+
+                    <div>
+
+                        <p class="text-xs font-bold text-brand-purple mb-3">
+                            Which block detects the pipe?
+                        </p>
+
+                        <div class="flex flex-col gap-3"
+                             data-quiz="collision">
+
+                            <button class="choice flex justify-center items-center"
+                                    onclick="answer('collision',this,true)">
+
+                                <span class="mini-block mini-sensing">
+                                    touching
+                                    <span class="sb-pill">Pipe ▼</span>
+                                    ?
+                                </span>
+
+                            </button>
+
+                            <button class="choice flex justify-center items-center"
+                                    onclick="answer('collision',this,false)">
+
+                                <span class="mini-block mini-motion">
+                                    move
+                                    <span class="sb-pill">10</span>
+                                    steps
+                                </span>
+
+                            </button>
+
+                        </div>
+
+                        <p id="collision-feedback"
+                           class="feedback"
+                           aria-live="polite"></p>
+
+                    </div>
+
+                   
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- =====================================================
+             SLIDE 7 — SCORE
+        ====================================================== -->
+
+        <section id="slide-7"
+                 class="slide flex-col items-center justify-center max-w-5xl mx-auto w-full gap-3">
+
+            <div class="text-center">
+
+                <span class="text-xs font-bold text-brand-purple uppercase">
+                    Concept 3 · Variables
+                </span>
+
+                <h2 class="text-2xl sm:text-3xl font-extrabold">
+                    Fly Through & Score!
+                </h2>
+
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+
+                <div class="panel text-center">
+
+                    <div class="bird-stage"
+                         id="score-stage">
+
+                        <div class="stage-label">
+
+                            Score:
+                            <span id="demo-score">0</span>
+
+                        </div>
+
+                        <div class="pipe pipe-top"
+                             id="score-pipe-top"
+                             style="left:65%"></div>
+
+                        <div class="pipe pipe-bottom"
+                             id="score-pipe-bottom"
+                             style="left:65%"></div>
+
+                        <div class="bird-actor"
+                             id="score-bird"
+                             style="left:15%;top:50%">
+                            🐤
+                        </div>
+
+                        <div id="score-animation-message"
+                             class="absolute top-12 left-0 right-0 text-center text-xl font-extrabold text-brand-purple z-10">
+                        </div>
+
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 justify-center mt-3">
+
+                        <button class="primary"
+                                id="pass-pipe-btn"
+                                onclick="passPipe()">
+
+                            Pass a Pipe
+
+                        </button>
+
+                        <button class="concept-btn"
+                                onclick="resetScore()">
+
+                            ↻ Reset
+
+                        </button>
+
+                    </div>
+
+                    <p id="score-demo-feedback"
+                       class="feedback"
+                       aria-live="polite">
+
+                        Pass through the pipes to earn a point!
+
+                    </p>
+
+                </div>
+
+                <div class="panel flex flex-col justify-between">
+
+                    <div>
+
+                        <p class="text-xs font-bold text-brand-purple mb-3">
+                            Which block adds ONE point?
+                        </p>
+
+                        <div class="flex flex-col gap-3"
+                             data-quiz="score">
+
+                            <button class="choice flex justify-center items-center"
+                                    onclick="answer('score',this,false)">
+
+                                <span class="mini-block mini-variable">
+                                    set
+                                    <span class="sb-pill">Score ▼</span>
+                                    to
+                                    <span class="sb-pill">0</span>
+                                </span>
+
+                            </button>
+
+                            <button class="choice flex justify-center items-center"
+                                    onclick="answer('score',this,true)">
+
+                                <span class="mini-block mini-variable">
+                                    change
+                                    <span class="sb-pill">Score ▼</span>
+                                    by
+                                    <span class="sb-pill">1</span>
+                                </span>
+
+                            </button>
+
+                        </div>
+
+                        <p id="score-feedback"
+                           class="feedback"
+                           aria-live="polite"></p>
+
+                    </div>
+
+                    <button class="concept-btn mt-3 self-start">
+                            
+                    <a href="https://scratchconceptvariables.vercel.app/" target="_blank">Revise Variables</a> 
+
+                        
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- =====================================================
+             SLIDE 8 — BROADCAST AND CLONING REVISION QUIZZES
+        ====================================================== -->
+
+        <section id="slide-8"
+                 class="slide flex-col items-center justify-center max-w-5xl mx-auto w-full gap-3">
+
+            <div class="text-center">
+
+                <span class="text-xs font-bold text-brand-purple uppercase">
+                    Quick Revision
+                </span>
+
+                <h2 class="text-2xl sm:text-3xl font-extrabold">
+                    Broadcast & Cloning
+                </h2>
+
+                <p class="text-sm text-gray-500 mt-1">
+                    Remember how these blocks work?
+                </p>
+
+            </div>
+
+            <div class="revision-grid">
+
+                <!-- BROADCAST QUIZ -->
+
+                <div class="panel revision-panel">
+
+                    <div>
+
+                        <h3 class="font-extrabold text-brand-purple text-base">
+                            Broadcast
+                        </h3>
+
+                        <p class="text-sm font-bold mt-2 mb-3">
+                            The bird hits a pipe. Which block sends
+                            the Game Over message to other sprites?
+                        </p>
+
+                    </div>
+
+                    <div class="flex flex-col gap-2"
+                         data-quiz="broadcast">
+
+                        <button class="choice flex justify-center items-center"
+                                onclick="answer('broadcast',this,true)">
+
+                            <span class="mini-block mini-event">
+                                broadcast
+                                <span class="sb-pill">Game Over ▼</span>
+                            </span>
+
+                        </button>
+
+                        <button class="choice flex justify-center items-center"
+                                onclick="answer('broadcast',this,false)">
+
+                            <span class="mini-block mini-event">
+                                when I receive
+                                <span class="sb-pill">Game Over ▼</span>
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                    <p id="broadcast-feedback"
+                       class="feedback"
+                       aria-live="polite"></p>
+
+                    <button class="concept-btn">
+                            
+
+                        <i class="fa-solid fa-book-open"></i>
+                                            <a href="https://scratchconceptbroadcastandreceive.vercel.app/" target="_blank">Revise Broadcast</a> 
+
+                    </button>
+
+                </div>
+
+                <!-- CLONING QUIZ -->
+
+                <div class="panel revision-panel">
+
+                    <div>
+
+                        <h3 class="font-extrabold text-brand-purple text-base">
+                            Cloning
+                        </h3>
+
+                        <p class="text-sm font-bold mt-2 mb-3">
+                            Which block creates another pipe
+                            during the game?
+                        </p>
+
+                    </div>
+
+                    <div class="flex flex-col gap-2"
+                         data-quiz="cloning">
+
+                        <button class="choice flex justify-center items-center"
+                                onclick="answer('cloning',this,false)">
+
+                            <span class="mini-block mini-control">
+                                when I start as a clone
+                            </span>
+
+                        </button>
+
+                        <button class="choice flex justify-center items-center"
+                                onclick="answer('cloning',this,true)">
+
+                            <span class="mini-block mini-control">
+                                create clone of
+                                <span class="sb-pill">myself ▼</span>
+                            </span>
+
+                        </button>
+
+                    </div>
+
+                    <p id="cloning-feedback"
+                       class="feedback"
+                       aria-live="polite"></p>
+
+                    <button class="concept-btn">
+                            
+                        <i class="fa-solid fa-book-open"></i>
+                        <a href="https://scratchconceptcloning.vercel.app/" target="_blank">Revise cloning</a>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- =====================================================
+             SLIDE 9 — FINAL CHALLENGE
+        ====================================================== -->
+
+        <section id="slide-9"
+                 class="slide flex-col items-center justify-center max-w-4xl mx-auto w-full gap-4">
+
+            <div class="text-center">
+
+                <span class="text-xs font-bold text-brand-purple uppercase">
+                    Final Challenge
+                </span>
+
+                <h2 class="text-2xl sm:text-3xl font-extrabold">
+                    Build the Flappy Bird Logic!
+                </h2>
+
+            </div>
+
+            <div class="panel w-full max-w-2xl">
+
+                <!-- QUESTION 1 -->
+
+                <p class="text-sm font-bold mb-3">
+                    1. What starts the game?
+                </p>
+
+                <div class="grid grid-cols-2 gap-3"
+                     data-quiz="final1">
+
+                    <button class="choice flex justify-center items-center"
+                            onclick="answer('final1',this,true)">
+
+                        <span class="mini-block mini-event">
+                            when ⚑ clicked
+                        </span>
+
+                    </button>
+
+                    <button class="choice flex justify-center items-center"
+                            onclick="answer('final1',this,false)">
+
+                        <span class="mini-block mini-control">
+                            wait
+                            <span class="sb-pill">1</span>
+                            seconds
+                        </span>
+
+                    </button>
+
+                </div>
+
+                <p id="final1-feedback"
+                   class="feedback"
+                   aria-live="polite"></p>
+
+                <!-- QUESTION 2 -->
+
+                <div class="border-t border-gray-200 pt-4 mt-3">
+
+                    <p class="text-sm font-bold mb-3">
+                        2. What happens when this code runs?
+                    </p>
+
+                    <div class="prediction-code mb-3">
+
+                        <div class="code-stack">
+
+                            <span class="mini-block mini-event">
+                                when ⚑ clicked
+                            </span>
+
+                            <span class="mini-block mini-control">
+                                forever
+                            </span>
+
+                            <div class="code-indent">
+
+                                <span class="mini-block mini-motion">
+                                    change y by
+                                    <span class="sb-pill">-2</span>
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2"
+                         data-quiz="final2">
+
+                        <button class="choice text-xs font-bold"
+                                onclick="answer('final2',this,false)">
+
+                            ⬆ Bird moves up
+
+                        </button>
+
+                        <button class="choice text-xs font-bold"
+                                onclick="answer('final2',this,true)">
+
+                            ⬇ Bird moves down
+
+                        </button>
+
+                        <button class="choice text-xs font-bold"
+                                onclick="answer('final2',this,false)">
+
+                            Bird stays still
+
+                        </button>
+
+                    </div>
+
+                    <p id="final2-feedback"
+                       class="feedback"
+                       aria-live="polite"></p>
+
+                </div>
+
+                <!-- FINISH -->
+
+                <div class="flex justify-center mt-4">
+
+                    <button id="finish-btn"
+                            class="primary"
+                            onclick="finishLesson()">
+
+                        🏆 Finish Lesson
+
+                    </button>
+
+                </div>
+
+                <p id="finish-feedback"
+                   class="feedback text-center"
+                   aria-live="polite"></p>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+
+    <footer class="bg-white border-t border-gray-200 px-6 py-3 flex justify-between items-center z-10 flex-shrink-0 gap-3">
+
+        <button id="btn-prev"
+                onclick="prevSlide()"
+                class="bg-gray-100 hover:bg-gray-200 text-brand-nearBlack font-bold px-4 py-2 rounded-xl text-xs sm:text-sm">
+
+            ⬅ Previous
+
+        </button>
+
+        <span class="text-xs font-bold text-gray-500 whitespace-nowrap">
+
+            Slide
+            <span id="current-slide-num">1</span>
+            of
+            <span id="total-slide-num">9</span>
+
+        </span>
+
+        <button id="btn-next"
+                onclick="nextSlide()"
+                class="bg-brand-purple hover:bg-brand-purpleDark text-white font-bold px-5 py-2 rounded-xl text-xs sm:text-sm shadow">
+
+            Next ➡
+
+        </button>
+
+    </footer>
+
+    <script>
+
+        /* =====================================================
+           GLOBAL
+        ====================================================== */
+
+        let currentSlide = 1;
+
+        const totalSlides = 9;
+
+        let soundEnabled = true;
+
+        const completed = {};
+
+        /*
+           ADD YOUR REVISION PRESENTATION LINKS HERE.
+
+           Example:
+           broadcast: "https://your-presentation-link"
+
+           Buttons remain visible even if the link is empty.
+        */
+
+        const REVISION_PPTS = {
+            gravity: "",
+            collision: "",
+            variables: "",
+            events: "",
+            broadcast: "",
+            cloning: ""
+        };
+
+        /* =====================================================
+           NAVIGATION
+        ====================================================== */
+
+        function updateSlide() {
+
+            document.querySelectorAll('.slide')
+                .forEach((slide, index) => {
+
+                    slide.classList.toggle(
+                        'active',
+                        index + 1 === currentSlide
+                    );
+
+                });
+
+            document.getElementById('current-slide-num')
+                .textContent = currentSlide;
+
+            document.getElementById('total-slide-num')
+                .textContent = totalSlides;
+
+            document.getElementById('btn-prev')
+                .style.visibility =
+                    currentSlide === 1
+                        ? 'hidden'
+                        : 'visible';
+
+            document.getElementById('btn-next')
+                .style.visibility =
+                    currentSlide === totalSlides
+                        ? 'hidden'
+                        : 'visible';
+
+            document.getElementById('main-content').scrollTop = 0;
+
+            if (currentSlide !== 6) {
+                stopCollisionAnimation();
+            }
+
+            if (currentSlide !== 7) {
+                stopScoreAnimation();
+            }
+
+            if (currentSlide !== 5) {
+                stopGravityAnimation();
+            }
+
+        }
+
+        function nextSlide() {
+
+            if (currentSlide < totalSlides) {
+
+                currentSlide++;
+                updateSlide();
+
+            }
+
+        }
+
+        function prevSlide() {
+
+            if (currentSlide > 1) {
+
+                currentSlide--;
+                updateSlide();
+
+            }
+
+        }
+
+        /* =====================================================
+           SOUND
+        ====================================================== */
+
+        function toggleAudio() {
+
+            soundEnabled = !soundEnabled;
+
+            document.getElementById('sound-icon').className =
+                soundEnabled
+                    ? 'fa-solid fa-volume-high text-base'
+                    : 'fa-solid fa-volume-xmark text-base';
+
+        }
+
+        /* =====================================================
+           CONFETTI
+        ====================================================== */
+
+        function celebrate(big = false) {
+
+            if (typeof confetti === 'function') {
+
+                confetti({
+                    particleCount: big ? 200 : 80,
+                    spread: big ? 110 : 70,
+                    origin: { y: 0.65 },
+                    colors: [
+                        '#5E48C4',
+                        '#FFD071',
+                        '#59E4FB',
+                        '#ED5661'
+                    ]
+                });
+
+            }
+
+        }
+
+        /* =====================================================
+           QUIZ SYSTEM
+        ====================================================== */
+
+        const quizExplanations = {
+
+            warm1:
+                'Pressing SPACE makes the bird flap upward.',
+
+            warm2:
+                'Touching a pipe ends the game.',
+
+            gravity:
+                'Positive Y moves up. Negative Y moves down.',
+
+            collision:
+                'The touching block checks whether two sprites touch.',
+
+            score:
+                'Change Score by 1 increases the current score.',
+
+            broadcast:
+                'Broadcast sends the Game Over message to other sprites.',
+
+            cloning:
+                'Create clone of myself makes another copy of the pipe.',
+
+            final1:
+                'The green flag starts the Scratch program.',
+
+            final2:
+                'Changing Y by -2 repeatedly moves the bird downward.'
+
+        };
+
+        const wrongHints = {
+
+            warm1:
+                'Think about what SPACE does to the bird.',
+
+            warm2:
+                'What happens when the bird crashes?',
+
+            gravity:
+                'In Scratch, positive Y moves upward.',
+
+            collision:
+                'Look for the block that checks touching.',
+
+            score:
+                'Which block increases the existing score?',
+
+            broadcast:
+                'Broadcast sends a message. When I receive waits for one.',
+
+            cloning:
+                'One block creates a clone. The other runs code inside it.',
+
+            final1:
+                'Look for the block that starts a script.',
+
+            final2:
+                'Negative Y means moving downward.'
+
+        };
+
+        function answer(id, button, isCorrect) {
+
+            if (completed[id]) return;
+
+            const group = document.querySelector(
+                '[data-quiz="' + id + '"]'
+            );
+
+            const feedback = document.getElementById(
+                id + '-feedback'
+            );
+
+            group.querySelectorAll('.choice')
+                .forEach(b => b.classList.remove('wrong'));
+
+            if (isCorrect) {
+
+                completed[id] = true;
+
+                button.classList.add('correct');
+
+                group.querySelectorAll('button')
+                    .forEach(b => b.disabled = true);
+
+                feedback.textContent =
+                    'Correct! ' + quizExplanations[id];
+
+                feedback.style.color = '#15803D';
+
+                celebrate();
+
+                if (id === 'gravity') {
+                    flapBird();
+                }
+
+                if (id === 'score') {
+                    passPipe();
+                }
+
+            } else {
+
+                button.classList.add('wrong');
+
+                feedback.textContent = wrongHints[id];
+
+                feedback.style.color = '#DC2626';
+
+            }
+
+            document.getElementById('warm-score').textContent =
+                '⭐ ' +
+                ['warm1', 'warm2']
+                    .filter(key => completed[key]).length +
+                ' / 2';
+
+        }
+
+        /* =====================================================
+           SLIDE 4 — GAME PLAN
+        ====================================================== */
+
+        const planDescriptions = {
+
+            1: 'Choose the bird, pipes, and backdrop.',
+
+            2: 'Use SPACE to flap and gravity to fall.',
+
+            3: 'Create copies of pipes as obstacles.',
+
+            4: 'Check if the bird touches a pipe.',
+
+            5: 'Add points when the bird passes a pipe.'
+
+        };
+
+        function showPlan(number, button) {
+
+            document.querySelectorAll('.plan-card')
+                .forEach(card => card.classList.remove('selected'));
+
+            button.classList.add('selected');
+
+            document.getElementById('plan-feedback')
+                .textContent = planDescriptions[number];
+
+        }
+
+        /* =====================================================
+           REVISION LINKS
+        ====================================================== */
+
+        function setupRevisionButtons() {
+            /*
+               Revision buttons are always visible.
+               No buttons are hidden when links are empty.
+            */
+        }
+
+        function openRevision(topic) {
+
+            const url = REVISION_PPTS[topic];
+
+            if (url) {
+
+                window.open(
+                    url,
+                    '_blank',
+                    'noopener,noreferrer'
+                );
+
+            } else {
+
+                alert('Revision link will be added soon.');
+
+            }
+
+        }
+
+        /* =====================================================
+           SLIDE 5 — GRAVITY
+        ====================================================== */
+
+        let birdY = 45;
+
+        let birdVelocity = 0;
+
+        let gravityTimer = null;
+
+        let gravityLastFrame = 0;
+
+        function stopGravityAnimation() {
+
+            if (gravityTimer !== null) {
+
+                cancelAnimationFrame(gravityTimer);
+
+                gravityTimer = null;
+
+            }
+
+            gravityLastFrame = 0;
+
+        }
+
+        function updateBirdPosition() {
+
+            const bird = document.getElementById('flap-bird');
+
+            bird.style.top = birdY + '%';
+
+        }
+
+        function resetFlap() {
+
+            stopGravityAnimation();
+
+            birdY = 45;
+
+            birdVelocity = 0;
+
+            updateBirdPosition();
+
+            document.getElementById('flap-feedback')
+                .textContent = 'Click FLAP to move up!';
+
+        }
+
+        function gravityStep(timestamp) {
+
+            if (!gravityLastFrame) {
+                gravityLastFrame = timestamp;
+            }
+
+            const dt = Math.min(
+                (timestamp - gravityLastFrame) / 16.67,
+                2
+            );
+
+            gravityLastFrame = timestamp;
+
+            birdVelocity += 0.15 * dt;
+
+            birdY += birdVelocity * dt;
+
+            if (birdY <= 12) {
+
+                birdY = 12;
+
+                birdVelocity = Math.max(0, birdVelocity);
+
+            }
+
+            if (birdY >= 76) {
+
+                birdY = 76;
+
+                birdVelocity = 0;
+
+                updateBirdPosition();
+
+                gravityTimer = null;
+
+                gravityLastFrame = 0;
+
+                document.getElementById('flap-feedback')
+                    .textContent = 'Gravity pulled the bird down!';
+
+                return;
+
+            }
+
+            updateBirdPosition();
+
+            gravityTimer = requestAnimationFrame(gravityStep);
+
+        }
+
+        function flapBird() {
+
+            birdVelocity = -3.5;
+
+            document.getElementById('flap-feedback')
+                .textContent = 'Flap moves up. Gravity pulls down.';
+
+            if (gravityTimer === null) {
+
+                gravityLastFrame = 0;
+
+                gravityTimer = requestAnimationFrame(gravityStep);
+
+            }
+
+        }
+
+        /* =====================================================
+           SLIDE 6 — COLLISION
+        ====================================================== */
+
+        let collisionFrame = null;
+
+        let collisionRunning = false;
+
+        let collisionX = 15;
+
+        let collisionLastFrame = 0;
+
+        function stopCollisionAnimation() {
+
+            if (collisionFrame !== null) {
+
+                cancelAnimationFrame(collisionFrame);
+
+                collisionFrame = null;
+
+            }
+
+            collisionRunning = false;
+
+            collisionLastFrame = 0;
+
+        }
+
+        function resetCollisionDemo() {
+
+            stopCollisionAnimation();
+
+            collisionX = 15;
+
+            const bird = document.getElementById('hit-bird');
+
+            bird.style.left = '15%';
+
+            bird.style.top = '50%';
+
+            document.getElementById('hit-message')
+                .textContent = '';
+
+            document.getElementById('collision-demo-feedback')
+                .textContent = 'Test both paths!';
+
+        }
+
+        function rectanglesOverlap(a, b) {
+
+            return (
+                a.left < b.right &&
+                a.right > b.left &&
+                a.top < b.bottom &&
+                a.bottom > b.top
+            );
+
+        }
+
+        function collisionStep(timestamp) {
+
+            if (!collisionRunning) return;
+
+            if (!collisionLastFrame) {
+                collisionLastFrame = timestamp;
+            }
+
+            const dt = Math.min(
+                (timestamp - collisionLastFrame) / 16.67,
+                2
+            );
+
+            collisionLastFrame = timestamp;
+
+            collisionX += 0.45 * dt;
+
+            const bird = document.getElementById('hit-bird');
+
+            bird.style.left = collisionX + '%';
+
+            const birdRect = bird.getBoundingClientRect();
+
+            const topRect = document.getElementById(
+                'collision-pipe-top'
+            ).getBoundingClientRect();
+
+            const bottomRect = document.getElementById(
+                'collision-pipe-bottom'
+            ).getBoundingClientRect();
+
+            const hit =
+                rectanglesOverlap(birdRect, topRect) ||
+                rectanglesOverlap(birdRect, bottomRect);
+
+            if (hit) {
+
+                stopCollisionAnimation();
+
+                document.getElementById('hit-message')
+                    .textContent = 'GAME OVER!';
+
+                document.getElementById('collision-demo-feedback')
+                    .textContent = 'The bird touched a pipe!';
+
+                return;
+
+            }
+
+            if (collisionX >= 90) {
+
+                stopCollisionAnimation();
+
+                document.getElementById('hit-message')
+                    .textContent = 'SAFE!';
+
+                document.getElementById('collision-demo-feedback')
+                    .textContent = 'The bird passed through the gap!';
+
+                celebrate();
+
+                return;
+
+            }
+
+            collisionFrame = requestAnimationFrame(
+                collisionStep
+            );
+
+        }
+
+        function startCollision(mode) {
+
+            resetCollisionDemo();
+
+            const bird = document.getElementById('hit-bird');
+
+            bird.style.top =
+                mode === 'hit' ? '29%' : '50%';
+
+            collisionRunning = true;
+
+            collisionFrame = requestAnimationFrame(
+                collisionStep
+            );
+
+        }
+
+        function testCollision() {
+
+            startCollision('hit');
+
+        }
+
+        function testSafePath() {
+
+            startCollision('safe');
+
+        }
+
+        /* =====================================================
+           SLIDE 7 — ANIMATED SCORING
+        ====================================================== */
+
+        let score = 0;
+
+        let scoreFrame = null;
+
+        let scoreRunning = false;
+
+        let scoreBirdX = 15;
+
+        let scoreLastFrame = 0;
+
+        let scoreAwarded = false;
+
+        function stopScoreAnimation() {
+
+            if (scoreFrame !== null) {
+
+                cancelAnimationFrame(scoreFrame);
+
+                scoreFrame = null;
+
+            }
+
+            scoreRunning = false;
+
+            scoreLastFrame = 0;
+
+            document.getElementById('pass-pipe-btn')
+                .disabled = false;
+
+        }
+
+        function resetScore() {
+
+            stopScoreAnimation();
+
+            score = 0;
+
+            scoreBirdX = 15;
+
+            scoreAwarded = false;
+
+            document.getElementById('demo-score')
+                .textContent = '0';
+
+            document.getElementById('score-bird')
+                .style.left = '15%';
+
+            document.getElementById('score-animation-message')
+                .textContent = '';
+
+            document.getElementById('score-demo-feedback')
+                .textContent =
+                    'Pass through the pipes to earn a point!';
+
+        }
+
+        function scoreStep(timestamp) {
+
+            if (!scoreRunning) return;
+
+            if (!scoreLastFrame) {
+                scoreLastFrame = timestamp;
+            }
+
+            const dt = Math.min(
+                (timestamp - scoreLastFrame) / 16.67,
+                2
+            );
+
+            scoreLastFrame = timestamp;
+
+            scoreBirdX += 0.5 * dt;
+
+            const bird = document.getElementById('score-bird');
+
+            bird.style.left = scoreBirdX + '%';
+
+            const pipe = document.getElementById(
+                'score-pipe-bottom'
+            );
+
+            const birdRect = bird.getBoundingClientRect();
+
+            const pipeRect = pipe.getBoundingClientRect();
+
+            if (!scoreAwarded &&
+                birdRect.left > pipeRect.right) {
+
+                scoreAwarded = true;
+
+                score++;
+
+                document.getElementById('demo-score')
+                    .textContent = score;
+
+                document.getElementById(
+                    'score-animation-message'
+                ).textContent = '+1 POINT!';
+
+                document.getElementById(
+                    'score-demo-feedback'
+                ).textContent =
+                    'Great! Passing a pipe increases Score by 1.';
+
+                celebrate();
+
+            }
+
+            if (scoreBirdX >= 92) {
+
+                stopScoreAnimation();
+
+                return;
+
+            }
+
+            scoreFrame = requestAnimationFrame(scoreStep);
+
+        }
+
+        function passPipe() {
+
+            if (scoreRunning) return;
+
+            stopScoreAnimation();
+
+            scoreBirdX = 15;
+
+            scoreAwarded = false;
+
+            document.getElementById('score-bird')
+                .style.left = '15%';
+
+            document.getElementById(
+                'score-animation-message'
+            ).textContent = '';
+
+            document.getElementById('pass-pipe-btn')
+                .disabled = true;
+
+            scoreRunning = true;
+
+            scoreFrame = requestAnimationFrame(scoreStep);
+
+        }
+
+        /* =====================================================
+           FINISH LESSON
+        ====================================================== */
+
+        function finishLesson() {
+
+            const required = [
+                'final1',
+                'final2'
+            ];
+
+            const feedback = document.getElementById(
+                'finish-feedback'
+            );
+
+            if (!required.every(key => completed[key])) {
+
+                feedback.textContent =
+                    'Choose both correct answers first!';
+
+                feedback.style.color = '#DC2626';
+
+                return;
+
+            }
+
+            celebrate(true);
+
+            feedback.textContent =
+                'Lesson Complete! Great Job!';
+
+            feedback.style.color = '#15803D';
+
+            const button = document.getElementById(
+                'finish-btn'
+            );
+
+            button.textContent = 'Completed!';
+
+            button.disabled = true;
+
+            button.style.background = '#DCFCE7';
+
+            setTimeout(() => {
+                celebrate(true);
+            }, 400);
+
+        }
+
+        /* =====================================================
+           INITIALIZE
+        ====================================================== */
+
+        setupRevisionButtons();
+
+        updateSlide();
+
+    </script>
+
+</body>
+</html>
